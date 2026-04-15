@@ -17,6 +17,7 @@ service Backend {
   rpc GenerateImage(GenerateImageRequest) returns (Result) {}
   rpc GenerateVideo(GenerateVideoRequest) returns (Result) {}
   rpc AudioTranscription(TranscriptRequest) returns (TranscriptResult) {}
+  rpc AudioTranscriptionStream(TranscriptRequest) returns (stream TranscriptStreamResponse) {}
   rpc TTS(TTSRequest) returns (Result) {}
   rpc TTSStream(TTSRequest) returns (stream Reply) {}
   rpc SoundGeneration(SoundGenerationRequest) returns (Result) {}
@@ -322,11 +323,21 @@ message TranscriptRequest {
   bool translate = 5;
   bool diarize = 6;
   string prompt = 7;
+  float temperature = 8;
+  repeated string timestamp_granularities = 9;
+  bool stream = 10;
 }
 
 message TranscriptResult {
   repeated TranscriptSegment segments = 1;
   string text = 2;
+  string language = 3;
+  float duration = 4;
+}
+
+message TranscriptStreamResponse {
+  string delta = 1;
+  TranscriptResult final_result = 2;
 }
 
 message TranscriptSegment {
@@ -444,6 +455,10 @@ message Message {
 
 message DetectOptions {
   string src = 1;
+  string prompt = 2;           // Text prompt (for SAM 3 PCS mode)
+  repeated float points = 3;   // Point coordinates as [x1, y1, label1, x2, y2, label2, ...] (label: 1=pos, 0=neg)
+  repeated float boxes = 4;    // Box coordinates as [x1, y1, x2, y2, ...]
+  float threshold = 5;         // Detection confidence threshold
 }
 
 message Detection {
@@ -453,6 +468,7 @@ message Detection {
   float height = 4;
   float confidence = 5;
   string class_name = 6;
+  bytes mask = 7;              // PNG-encoded binary segmentation mask
 }
 
 message DetectResponse {

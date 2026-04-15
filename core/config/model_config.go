@@ -77,6 +77,8 @@ type ModelConfig struct {
 
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 	Usage       string `yaml:"usage,omitempty" json:"usage,omitempty"`
+	Disabled    *bool  `yaml:"disabled,omitempty" json:"disabled,omitempty"`
+	Pinned      *bool  `yaml:"pinned,omitempty" json:"pinned,omitempty"`
 
 	Options   []string `yaml:"options,omitempty" json:"options,omitempty"`
 	Overrides []string `yaml:"overrides,omitempty" json:"overrides,omitempty"`
@@ -495,7 +497,12 @@ func (cfg *ModelConfig) SetDefaults(opts ...ConfigLoaderOption) {
 		cfg.Debug = &trueV
 	}
 
-	guessDefaultsFromFile(cfg, lo.modelPath, ctx)
+	// If a context size was provided via LoadOptions, apply it before hooks so they
+	// don't override it with their own defaults.
+	if ctx != 0 && cfg.ContextSize == nil {
+		cfg.ContextSize = &ctx
+	}
+	runBackendHooks(cfg, lo.modelPath)
 	cfg.syncKnownUsecasesFromString()
 }
 
@@ -546,6 +553,16 @@ func (c *ModelConfig) GetModelConfigFile() string {
 // GetModelTemplate returns the model's chat template if available
 func (c *ModelConfig) GetModelTemplate() string {
 	return c.modelTemplate
+}
+
+// IsDisabled returns true if the model is disabled
+func (c *ModelConfig) IsDisabled() bool {
+	return c.Disabled != nil && *c.Disabled
+}
+
+// IsPinned returns true if the model is pinned (excluded from idle unloading and eviction)
+func (c *ModelConfig) IsPinned() bool {
+	return c.Pinned != nil && *c.Pinned
 }
 
 type ModelConfigUsecase int
@@ -705,7 +722,8 @@ func (c *ModelConfig) GuessUsecases(u ModelConfigUsecase) bool {
 	}
 
 	if (u & FLAG_DETECTION) == FLAG_DETECTION {
-		if c.Backend != "rfdetr" {
+		detectionBackends := []string{"rfdetr", "sam3-cpp"}
+		if !slices.Contains(detectionBackends, c.Backend) {
 			return false
 		}
 	}

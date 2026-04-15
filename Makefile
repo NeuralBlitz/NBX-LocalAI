@@ -1,5 +1,5 @@
 # Disable parallel execution for backend builds
-.NOTPARALLEL: backends/diffusers backends/llama-cpp backends/outetts backends/piper backends/stablediffusion-ggml backends/whisper backends/faster-whisper backends/silero-vad backends/local-store backends/huggingface backends/rfdetr backends/kitten-tts backends/kokoro backends/chatterbox backends/llama-cpp-darwin backends/neutts build-darwin-python-backend build-darwin-go-backend backends/mlx backends/diffuser-darwin backends/mlx-vlm backends/mlx-audio backends/mlx-distributed backends/stablediffusion-ggml-darwin backends/vllm backends/vllm-omni backends/moonshine backends/pocket-tts backends/qwen-tts backends/faster-qwen3-tts backends/qwen-asr backends/nemo backends/voxcpm backends/whisperx backends/ace-step backends/acestep-cpp backends/fish-speech backends/voxtral backends/opus backends/trl backends/llama-cpp-quantization
+.NOTPARALLEL: backends/diffusers backends/llama-cpp backends/turboquant backends/outetts backends/piper backends/stablediffusion-ggml backends/whisper backends/faster-whisper backends/silero-vad backends/local-store backends/huggingface backends/rfdetr backends/kitten-tts backends/kokoro backends/chatterbox backends/llama-cpp-darwin backends/neutts build-darwin-python-backend build-darwin-go-backend backends/mlx backends/diffuser-darwin backends/mlx-vlm backends/mlx-audio backends/mlx-distributed backends/stablediffusion-ggml-darwin backends/vllm backends/vllm-omni backends/moonshine backends/pocket-tts backends/qwen-tts backends/faster-qwen3-tts backends/qwen-asr backends/nemo backends/voxcpm backends/whisperx backends/ace-step backends/acestep-cpp backends/fish-speech backends/voxtral backends/opus backends/trl backends/llama-cpp-quantization backends/kokoros backends/sam3-cpp backends/qwen3-tts-cpp
 
 GOCMD=go
 GOTEST=$(GOCMD) test
@@ -148,7 +148,6 @@ test-models/testmodel.ggml:
 	mkdir -p test-dir
 	wget -q https://huggingface.co/mradermacher/gpt2-alpaca-gpt4-GGUF/resolve/main/gpt2-alpaca-gpt4.Q4_K_M.gguf -O test-models/testmodel.ggml
 	wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin -O test-models/whisper-en
-	wget -q https://huggingface.co/mudler/all-MiniLM-L6-v2/resolve/main/ggml-model-q4_0.bin -O test-models/bert
 	wget -q https://cdn.openai.com/whisper/draft-20220913a/micro-machines.wav -O test-dir/audio.wav
 	cp tests/models_fixtures/* test-models
 
@@ -429,9 +428,11 @@ prepare-test-extra: protogen-python
 	$(MAKE) -C backend/python/qwen-asr
 	$(MAKE) -C backend/python/nemo
 	$(MAKE) -C backend/python/voxcpm
+	$(MAKE) -C backend/python/faster-whisper
 	$(MAKE) -C backend/python/whisperx
 	$(MAKE) -C backend/python/ace-step
 	$(MAKE) -C backend/python/trl
+	$(MAKE) -C backend/rust/kokoros kokoros-grpc
 
 test-extra: prepare-test-extra
 	$(MAKE) -C backend/python/transformers test
@@ -449,9 +450,121 @@ test-extra: prepare-test-extra
 	$(MAKE) -C backend/python/qwen-asr test
 	$(MAKE) -C backend/python/nemo test
 	$(MAKE) -C backend/python/voxcpm test
+	$(MAKE) -C backend/python/faster-whisper test
 	$(MAKE) -C backend/python/whisperx test
 	$(MAKE) -C backend/python/ace-step test
 	$(MAKE) -C backend/python/trl test
+	$(MAKE) -C backend/rust/kokoros test
+
+##
+## End-to-end gRPC tests that exercise a built backend container image.
+##
+## The test suite in tests/e2e-backends is backend-agnostic. You drive it via env
+## vars (see tests/e2e-backends/backend_test.go for the full list) and the
+## capability-driven harness picks which gRPC RPCs to exercise:
+##
+##   BACKEND_IMAGE            Required. Docker image to test, e.g. local-ai-backend:llama-cpp.
+##   BACKEND_TEST_MODEL_URL   URL of a model file to download and load.
+##   BACKEND_TEST_MODEL_FILE  Path to an already-downloaded model (skips download).
+##   BACKEND_TEST_MODEL_NAME  HuggingFace repo id (e.g. Qwen/Qwen2.5-0.5B-Instruct).
+##                            Use this instead of MODEL_URL for backends that
+##                            resolve HF model ids natively (vllm, vllm-omni).
+##   BACKEND_TEST_CAPS        Comma-separated capabilities, default "health,load,predict,stream".
+##                            Adds "tools" to exercise ChatDelta tool call extraction.
+##   BACKEND_TEST_PROMPT      Override the prompt used in predict/stream specs.
+##   BACKEND_TEST_OPTIONS     Comma-separated Options[] entries forwarded to LoadModel,
+##                            e.g. "tool_parser:hermes,reasoning_parser:qwen3".
+##
+## Direct usage (image already built, no docker-build-* dependency):
+##
+##   make test-extra-backend BACKEND_IMAGE=local-ai-backend:llama-cpp \
+##       BACKEND_TEST_MODEL_URL=https://.../model.gguf
+##
+## Convenience wrappers below build a specific backend image first, then run the
+## suite against it.
+##
+BACKEND_TEST_MODEL_URL?=https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q8_0.gguf
+
+## Generic target — runs the suite against whatever BACKEND_IMAGE points at.
+## Depends on protogen-go so pkg/grpc/proto is generated before `go test`.
+test-extra-backend: protogen-go
+	@test -n "$$BACKEND_IMAGE" || { echo "BACKEND_IMAGE must be set" >&2; exit 1; }
+	BACKEND_IMAGE="$$BACKEND_IMAGE" \
+	BACKEND_TEST_MODEL_URL="$${BACKEND_TEST_MODEL_URL:-$(BACKEND_TEST_MODEL_URL)}" \
+	BACKEND_TEST_MODEL_FILE="$$BACKEND_TEST_MODEL_FILE" \
+	BACKEND_TEST_MODEL_NAME="$$BACKEND_TEST_MODEL_NAME" \
+	BACKEND_TEST_MMPROJ_URL="$$BACKEND_TEST_MMPROJ_URL" \
+	BACKEND_TEST_MMPROJ_FILE="$$BACKEND_TEST_MMPROJ_FILE" \
+	BACKEND_TEST_AUDIO_URL="$$BACKEND_TEST_AUDIO_URL" \
+	BACKEND_TEST_AUDIO_FILE="$$BACKEND_TEST_AUDIO_FILE" \
+	BACKEND_TEST_CAPS="$$BACKEND_TEST_CAPS" \
+	BACKEND_TEST_PROMPT="$$BACKEND_TEST_PROMPT" \
+	BACKEND_TEST_OPTIONS="$$BACKEND_TEST_OPTIONS" \
+	BACKEND_TEST_TOOL_PROMPT="$$BACKEND_TEST_TOOL_PROMPT" \
+	BACKEND_TEST_TOOL_NAME="$$BACKEND_TEST_TOOL_NAME" \
+	BACKEND_TEST_CACHE_TYPE_K="$$BACKEND_TEST_CACHE_TYPE_K" \
+	BACKEND_TEST_CACHE_TYPE_V="$$BACKEND_TEST_CACHE_TYPE_V" \
+	go test -v -timeout 30m ./tests/e2e-backends/...
+
+## Convenience wrappers: build the image, then exercise it.
+test-extra-backend-llama-cpp: docker-build-llama-cpp
+	BACKEND_IMAGE=local-ai-backend:llama-cpp $(MAKE) test-extra-backend
+
+test-extra-backend-ik-llama-cpp: docker-build-ik-llama-cpp
+	BACKEND_IMAGE=local-ai-backend:ik-llama-cpp $(MAKE) test-extra-backend
+
+## turboquant: exercises the llama.cpp-fork backend with the fork's
+## *TurboQuant-specific* KV-cache types (turbo3 for both K and V). turbo3
+## is what makes this backend distinct from stock llama-cpp — picking q8_0
+## here would only test the standard llama.cpp code path that the upstream
+## llama-cpp backend already covers. The fork auto-enables flash_attention
+## when turbo3/turbo4 are active, so we don't need to set it explicitly.
+test-extra-backend-turboquant: docker-build-turboquant
+	BACKEND_IMAGE=local-ai-backend:turboquant \
+	BACKEND_TEST_CACHE_TYPE_K=q8_0 \
+	BACKEND_TEST_CACHE_TYPE_V=turbo3 \
+	$(MAKE) test-extra-backend
+
+## Audio transcription wrapper for the llama-cpp backend.
+## Drives the new AudioTranscription / AudioTranscriptionStream RPCs against
+## ggml-org/Qwen3-ASR-0.6B-GGUF (a small ASR model that requires its mmproj
+## audio encoder companion). The audio fixture is a short public-domain
+## "jfk.wav" clip ggml-org bundles with whisper.cpp's CI assets.
+test-extra-backend-llama-cpp-transcription: docker-build-llama-cpp
+	BACKEND_IMAGE=local-ai-backend:llama-cpp \
+	BACKEND_TEST_MODEL_URL=https://huggingface.co/ggml-org/Qwen3-ASR-0.6B-GGUF/resolve/main/Qwen3-ASR-0.6B-Q8_0.gguf \
+	BACKEND_TEST_MMPROJ_URL=https://huggingface.co/ggml-org/Qwen3-ASR-0.6B-GGUF/resolve/main/mmproj-Qwen3-ASR-0.6B-Q8_0.gguf \
+	BACKEND_TEST_AUDIO_URL=https://github.com/ggml-org/whisper.cpp/raw/master/samples/jfk.wav \
+	BACKEND_TEST_CAPS=health,load,transcription \
+	$(MAKE) test-extra-backend
+
+## vllm is resolved from a HuggingFace model id (no file download) and
+## exercises Predict + streaming + tool-call extraction via the hermes parser.
+## Requires a host CPU with the SIMD instructions the prebuilt vllm CPU
+## wheel was compiled against (AVX-512 VNNI/BF16); older CPUs will SIGILL
+## on import — on CI this means using the bigger-runner label.
+test-extra-backend-vllm: docker-build-vllm
+	BACKEND_IMAGE=local-ai-backend:vllm \
+	BACKEND_TEST_MODEL_NAME=Qwen/Qwen2.5-0.5B-Instruct \
+	BACKEND_TEST_CAPS=health,load,predict,stream,tools \
+	BACKEND_TEST_OPTIONS=tool_parser:hermes \
+	$(MAKE) test-extra-backend
+
+## mlx is Apple-Silicon-first — the MLX backend auto-detects the right tool
+## parser from the chat template, so no tool_parser: option is needed (it
+## would be ignored at runtime). Run this on macOS / arm64 with Metal; the
+## Linux/CPU mlx variant is untested in CI.
+test-extra-backend-mlx: docker-build-mlx
+	BACKEND_IMAGE=local-ai-backend:mlx \
+	BACKEND_TEST_MODEL_NAME=mlx-community/Qwen2.5-0.5B-Instruct-4bit \
+	BACKEND_TEST_CAPS=health,load,predict,stream,tools \
+	$(MAKE) test-extra-backend
+
+test-extra-backend-mlx-vlm: docker-build-mlx-vlm
+	BACKEND_IMAGE=local-ai-backend:mlx-vlm \
+	BACKEND_TEST_MODEL_NAME=mlx-community/Qwen2.5-0.5B-Instruct-4bit \
+	BACKEND_TEST_CAPS=health,load,predict,stream,tools \
+	$(MAKE) test-extra-backend
 
 DOCKER_IMAGE?=local-ai
 IMAGE_TYPE?=core
@@ -546,6 +659,11 @@ backend-images:
 # Backend metadata: BACKEND_NAME | DOCKERFILE_TYPE | BUILD_CONTEXT | PROGRESS_FLAG | NEEDS_BACKEND_ARG
 # llama-cpp is special - uses llama-cpp Dockerfile and doesn't need BACKEND arg
 BACKEND_LLAMA_CPP = llama-cpp|llama-cpp|.|false|false
+# ik-llama-cpp is a fork of llama.cpp with superior CPU performance
+BACKEND_IK_LLAMA_CPP = ik-llama-cpp|ik-llama-cpp|.|false|false
+# turboquant is a llama.cpp fork with TurboQuant KV-cache quantization.
+# Reuses backend/cpp/llama-cpp grpc-server sources via a thin wrapper Makefile.
+BACKEND_TURBOQUANT = turboquant|turboquant|.|false|false
 
 # Golang backends
 BACKEND_PIPER = piper|golang|.|false|true
@@ -556,6 +674,7 @@ BACKEND_STABLEDIFFUSION_GGML = stablediffusion-ggml|golang|.|--progress=plain|tr
 BACKEND_WHISPER = whisper|golang|.|false|true
 BACKEND_VOXTRAL = voxtral|golang|.|false|true
 BACKEND_ACESTEP_CPP = acestep-cpp|golang|.|false|true
+BACKEND_QWEN3_TTS_CPP = qwen3-tts-cpp|golang|.|false|true
 BACKEND_OPUS = opus|golang|.|false|true
 
 # Python backends with root context
@@ -583,9 +702,17 @@ BACKEND_NEMO = nemo|python|.|false|true
 BACKEND_VOXCPM = voxcpm|python|.|false|true
 BACKEND_WHISPERX = whisperx|python|.|false|true
 BACKEND_ACE_STEP = ace-step|python|.|false|true
+BACKEND_MLX = mlx|python|.|false|true
+BACKEND_MLX_VLM = mlx-vlm|python|.|false|true
 BACKEND_MLX_DISTRIBUTED = mlx-distributed|python|./|false|true
 BACKEND_TRL = trl|python|.|false|true
 BACKEND_LLAMA_CPP_QUANTIZATION = llama-cpp-quantization|python|.|false|true
+
+# Rust backends
+BACKEND_KOKOROS = kokoros|rust|.|false|true
+
+# C++ backends (Go wrapper with purego)
+BACKEND_SAM3_CPP = sam3-cpp|golang|.|false|true
 
 # Helper function to build docker image for a backend
 # Usage: $(call docker-build-backend,BACKEND_NAME,DOCKERFILE_TYPE,BUILD_CONTEXT,PROGRESS_FLAG,NEEDS_BACKEND_ARG)
@@ -597,6 +724,7 @@ define docker-build-backend
 		--build-arg CUDA_MINOR_VERSION=$(CUDA_MINOR_VERSION) \
 		--build-arg UBUNTU_VERSION=$(UBUNTU_VERSION) \
 		--build-arg UBUNTU_CODENAME=$(UBUNTU_CODENAME) \
+		$(if $(FROM_SOURCE),--build-arg FROM_SOURCE=$(FROM_SOURCE)) \
 		$(if $(filter true,$(5)),--build-arg BACKEND=$(1)) \
 		-t local-ai-backend:$(1) -f backend/Dockerfile.$(2) $(3)
 endef
@@ -609,6 +737,8 @@ endef
 
 # Generate all docker-build targets
 $(eval $(call generate-docker-build-target,$(BACKEND_LLAMA_CPP)))
+$(eval $(call generate-docker-build-target,$(BACKEND_IK_LLAMA_CPP)))
+$(eval $(call generate-docker-build-target,$(BACKEND_TURBOQUANT)))
 $(eval $(call generate-docker-build-target,$(BACKEND_PIPER)))
 $(eval $(call generate-docker-build-target,$(BACKEND_LOCAL_STORE)))
 $(eval $(call generate-docker-build-target,$(BACKEND_HUGGINGFACE)))
@@ -642,15 +772,20 @@ $(eval $(call generate-docker-build-target,$(BACKEND_VOXCPM)))
 $(eval $(call generate-docker-build-target,$(BACKEND_WHISPERX)))
 $(eval $(call generate-docker-build-target,$(BACKEND_ACE_STEP)))
 $(eval $(call generate-docker-build-target,$(BACKEND_ACESTEP_CPP)))
+$(eval $(call generate-docker-build-target,$(BACKEND_QWEN3_TTS_CPP)))
+$(eval $(call generate-docker-build-target,$(BACKEND_MLX)))
+$(eval $(call generate-docker-build-target,$(BACKEND_MLX_VLM)))
 $(eval $(call generate-docker-build-target,$(BACKEND_MLX_DISTRIBUTED)))
 $(eval $(call generate-docker-build-target,$(BACKEND_TRL)))
 $(eval $(call generate-docker-build-target,$(BACKEND_LLAMA_CPP_QUANTIZATION)))
+$(eval $(call generate-docker-build-target,$(BACKEND_KOKOROS)))
+$(eval $(call generate-docker-build-target,$(BACKEND_SAM3_CPP)))
 
 # Pattern rule for docker-save targets
 docker-save-%: backend-images
 	docker save local-ai-backend:$* -o backend-images/$*.tar
 
-docker-build-backends: docker-build-llama-cpp docker-build-rerankers docker-build-vllm docker-build-vllm-omni docker-build-transformers docker-build-outetts docker-build-diffusers docker-build-kokoro docker-build-faster-whisper docker-build-coqui docker-build-chatterbox docker-build-vibevoice docker-build-moonshine docker-build-pocket-tts docker-build-qwen-tts docker-build-fish-speech docker-build-faster-qwen3-tts docker-build-qwen-asr docker-build-nemo docker-build-voxcpm docker-build-whisperx docker-build-ace-step docker-build-acestep-cpp docker-build-voxtral docker-build-mlx-distributed docker-build-trl docker-build-llama-cpp-quantization
+docker-build-backends: docker-build-llama-cpp docker-build-ik-llama-cpp docker-build-turboquant docker-build-rerankers docker-build-vllm docker-build-vllm-omni docker-build-transformers docker-build-outetts docker-build-diffusers docker-build-kokoro docker-build-faster-whisper docker-build-coqui docker-build-chatterbox docker-build-vibevoice docker-build-moonshine docker-build-pocket-tts docker-build-qwen-tts docker-build-fish-speech docker-build-faster-qwen3-tts docker-build-qwen-asr docker-build-nemo docker-build-voxcpm docker-build-whisperx docker-build-ace-step docker-build-acestep-cpp docker-build-voxtral docker-build-mlx-distributed docker-build-trl docker-build-llama-cpp-quantization docker-build-kokoros docker-build-sam3-cpp docker-build-qwen3-tts-cpp
 
 ########################################################
 ### Mock Backend for E2E Tests

@@ -26,7 +26,135 @@
       uri: https://huggingface.co/mudler/gemma-4-26B-A4B-it-APEX-GGUF/resolve/main/mmproj-F16.gguf
     - filename: llama-cpp/models/gemma-4-26B-A4B-it-APEX-GGUF/gemma-4-26B-A4B-APEX-Quality.gguf
       uri: https://huggingface.co/mudler/gemma-4-26B-A4B-it-APEX-GGUF/resolve/main/gemma-4-26B-A4B-APEX-Quality.gguf
-      sha256: a6591d7b41978e6f465acd9d03e96286f70912402c695158fb267ccbfbb740ed
+      sha256: 1e451ca405fdebf6bcfd386892bd88d4939f027edecc5f9c73578f3f0bd8416c
+- &gemma4
+  url: "github:mudler/LocalAI/gallery/virtual.yaml@master"
+  name: "gemma-4-26b-a4b-it"
+  icon: https://ai.google.dev/static/gemma/images/gemma3.png
+  license: gemma
+  urls:
+    - https://huggingface.co/google/gemma-4-26B-A4B-it
+    - https://huggingface.co/ggml-org/gemma-4-26B-A4B-it-GGUF
+  description: |
+    Google Gemma 4 26B-A4B-IT is an open-source multimodal Mixture-of-Experts model with 26B total parameters and 4B active parameters. It handles text and image input, generating text output, with a 256K context window and support for 140+ languages. The MoE architecture provides strong performance with efficient inference. Well-suited for question answering, summarization, reasoning, and image understanding tasks.
+  tags:
+    - llm
+    - gguf
+    - gpu
+    - cpu
+    - gemma
+    - gemma4
+    - gemma-4
+    - multimodal
+  overrides:
+    backend: llama-cpp
+    function:
+      automatic_tool_parsing_fallback: true
+      grammar:
+        disable: true
+    known_usecases:
+      - chat
+    mmproj: mmproj-gemma-4-26B-A4B-it-f16.gguf
+    options:
+      - use_jinja:true
+    parameters:
+      model: gemma-4-26B-A4B-it-Q4_K_M.gguf
+    template:
+      use_tokenizer_template: true
+  files:
+    - filename: gemma-4-26B-A4B-it-Q4_K_M.gguf
+      uri: huggingface://ggml-org/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_K_M.gguf
+      sha256: 88f4a13b0bb95f031a7fad973e10854122fb67ebc34d214d39a2f65053046abc
+    - filename: mmproj-gemma-4-26B-A4B-it-f16.gguf
+      sha256: 4107c1c3c299095fbc323f87f4e4cac81dd9527db5ff90808fea669e08244531
+      uri: huggingface://ggml-org/gemma-4-26B-A4B-it-GGUF/mmproj-gemma-4-26B-A4B-it-f16.gguf
+- !!merge <<: *gemma4
+  name: "gemma-4-e2b-it"
+  urls:
+    - https://huggingface.co/google/gemma-4-E2B-it
+    - https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF
+  description: |
+    Google Gemma 4 E2B-IT is a lightweight open-source multimodal model with 5B total parameters and 2B effective parameters using selective parameter activation. It handles text and image input, generating text output, with a 256K context window and support for 140+ languages. Optimized for efficient execution on low-resource devices including mobile and laptops.
+  overrides:
+    backend: llama-cpp
+    function:
+      automatic_tool_parsing_fallback: true
+      grammar:
+        disable: true
+    known_usecases:
+      - chat
+    mmproj: mmproj-gemma-4-e2b-it-f16.gguf
+    options:
+      - use_jinja:true
+    parameters:
+      model: gemma-4-e2b-it-Q8_0.gguf
+    template:
+      use_tokenizer_template: true
+  files:
+    - filename: gemma-4-e2b-it-Q8_0.gguf
+      sha256: 12d878964d21f1779dea15abeee048855151b27089fe98b32c628f85740933f3
+      uri: huggingface://ggml-org/gemma-4-E2B-it-GGUF/gemma-4-e2b-it-Q8_0.gguf
+    - filename: mmproj-gemma-4-e2b-it-f16.gguf
+      sha256: 9165f3d9674c3731ae29373d95b860d141eee030b0ec0bf4577e2de8596a7767
+      uri: huggingface://ggml-org/gemma-4-E2B-it-GGUF/mmproj-gemma-4-e2b-it-f16.gguf
+- !!merge <<: *gemma4
+  name: "gemma-4-e4b-it"
+  urls:
+    - https://huggingface.co/google/gemma-4-E4B-it
+    - https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF
+  description: |
+    Google Gemma 4 E4B-IT is an open-source multimodal model with 8B total parameters and 4B effective parameters using selective parameter activation. It handles text and image input, generating text output, with a 256K context window and support for 140+ languages. Offers a good balance of performance and efficiency for deployment on consumer hardware.
+  overrides:
+    backend: llama-cpp
+    function:
+      automatic_tool_parsing_fallback: true
+      grammar:
+        disable: true
+    known_usecases:
+      - chat
+    mmproj: mmproj-gemma-4-e4b-it-f16.gguf
+    options:
+      - use_jinja:true
+    parameters:
+      model: gemma-4-e4b-it-Q4_K_M.gguf
+    template:
+      use_tokenizer_template: true
+  files:
+    - filename: gemma-4-e4b-it-Q4_K_M.gguf
+      sha256: dff4e4ca848e33e678a63b5b7d1f8bfa4a17e764415d0c0aaaad07c84f4d8fad
+      uri: huggingface://ggml-org/gemma-4-E4B-it-GGUF/gemma-4-e4b-it-Q4_K_M.gguf
+    - filename: mmproj-gemma-4-e4b-it-f16.gguf
+      sha256: a7e94f39cee4569fae49c852cbfb574c54e225aafb8b75313a8bf06b89e17712
+      uri: huggingface://ggml-org/gemma-4-E4B-it-GGUF/mmproj-gemma-4-e4b-it-f16.gguf
+- !!merge <<: *gemma4
+  name: "gemma-4-31b-it"
+  urls:
+    - https://huggingface.co/google/gemma-4-31B-it
+    - https://huggingface.co/unsloth/gemma-4-31B-it-GGUF
+  description: |
+    Google Gemma 4 31B-IT is the largest dense model in the Gemma 4 family with 31B parameters. It handles text and image input, generating text output, with a 256K context window and support for 140+ languages. Provides the highest quality outputs in the Gemma 4 lineup, well-suited for complex reasoning, summarization, and image understanding tasks.
+  overrides:
+    backend: llama-cpp
+    function:
+      automatic_tool_parsing_fallback: true
+      grammar:
+        disable: true
+    known_usecases:
+      - chat
+    mmproj: mmproj-F16.gguf
+    options:
+      - use_jinja:true
+    parameters:
+      model: gemma-4-31B-it-Q4_K_M.gguf
+    template:
+      use_tokenizer_template: true
+  files:
+    - filename: gemma-4-31B-it-Q4_K_M.gguf
+      uri: huggingface://unsloth/gemma-4-31B-it-GGUF/gemma-4-31B-it-Q4_K_M.gguf
+      sha256: 3bf13fff7c0d4deff809b7ab168428f54855f3ef0279339dda278a81ea853474
+    - filename: mmproj-F16.gguf
+      sha256: 1be2a32013e0d29c6c746513b5f5e7d38f47b694351e74a69c7172acdbbb11a6
+      uri: https://huggingface.co/unsloth/gemma-4-31B-it-GGUF/resolve/main/mmproj-F16.gguf
 - name: "qwen3.5-35b-a3b-apex"
   url: "github:mudler/LocalAI/gallery/virtual.yaml@master"
   urls:
@@ -866,6 +994,67 @@
     - filename: acestep-cpp/vae-BF16.gguf
       uri: huggingface://Serveurperso/ACE-Step-1.5-GGUF/vae-BF16.gguf
       sha256: 0599862ac5d15cd308e1d2e368373aea6c02e25ebd1737ad4a4562a0901b0ef8
+- name: "qwen3-tts-cpp"
+  license: apache-2.0
+  tags:
+    - tts
+    - text-to-speech
+    - qwen3-tts
+    - qwen3-tts-cpp
+    - gguf
+  url: "github:mudler/LocalAI/gallery/virtual.yaml@master"
+  urls:
+    - https://huggingface.co/endo5501/qwen3-tts.cpp
+    - https://github.com/predict-woo/qwen3-tts.cpp
+  description: |
+    Qwen3-TTS 0.6B (C++ / GGML) — native C++ text-to-speech from text input.
+    Generates 24kHz mono audio. Supports 10 languages (en, zh, ja, ko, de, fr, es, it, pt, ru).
+    Uses F16 GGUF models (~2 GB total).
+  overrides:
+    name: qwen3-tts-cpp
+    backend: qwen3-tts-cpp
+    parameters:
+      model: qwen3-tts-cpp
+    known_usecases:
+      - tts
+  files:
+    - filename: qwen3-tts-cpp/qwen3-tts-0.6b-f16.gguf
+      uri: huggingface://endo5501/qwen3-tts.cpp/qwen3-tts-0.6b-f16.gguf
+      sha256: 0b89770118463af8f2467d824a8de57d96df6a09f927a9769a3f7b7fffa7087d
+    - filename: qwen3-tts-cpp/qwen3-tts-tokenizer-f16.gguf
+      uri: huggingface://endo5501/qwen3-tts.cpp/qwen3-tts-tokenizer-f16.gguf
+      sha256: d1ad9660bd99343f4851d5a4b17e31f65648feb3559f6ea062ae6575e5cd9d90
+- name: "qwen3-tts-cpp-customvoice"
+  license: apache-2.0
+  tags:
+    - tts
+    - text-to-speech
+    - voice-cloning
+    - qwen3-tts
+    - qwen3-tts-cpp
+    - gguf
+  url: "github:mudler/LocalAI/gallery/virtual.yaml@master"
+  urls:
+    - https://huggingface.co/endo5501/qwen3-tts.cpp
+    - https://github.com/predict-woo/qwen3-tts.cpp
+  description: |
+    Qwen3-TTS 0.6B Custom Voice (C++ / GGML) — text-to-speech with voice cloning support.
+    Generates 24kHz mono audio with optional reference audio for voice cloning via ECAPA-TDNN speaker embeddings.
+    Supports 10 languages (en, zh, ja, ko, de, fr, es, it, pt, ru).
+  overrides:
+    name: qwen3-tts-cpp-customvoice
+    backend: qwen3-tts-cpp
+    parameters:
+      model: qwen3-tts-cpp-customvoice
+    known_usecases:
+      - tts
+  files:
+    - filename: qwen3-tts-cpp-customvoice/qwen3-tts-0.6b-customvoice-f16.gguf
+      uri: huggingface://endo5501/qwen3-tts.cpp/qwen3-tts-0.6b-customvoice-f16.gguf
+      sha256: 40b985b71be0970d41eb042488766db556cf17290aa1cff631cabfa0bd3b0431
+    - filename: qwen3-tts-cpp-customvoice/qwen3-tts-tokenizer-f16.gguf
+      uri: huggingface://endo5501/qwen3-tts.cpp/qwen3-tts-tokenizer-f16.gguf
+      sha256: d1ad9660bd99343f4851d5a4b17e31f65648feb3559f6ea062ae6575e5cd9d90
 - name: "qwen3-coder-next-mxfp4_moe"
   url: "github:mudler/LocalAI/gallery/virtual.yaml@master"
   urls:
@@ -2011,6 +2200,211 @@
     - filename: mmproj/mmproj-Qwen3-VL-8B-Thinking-F16.gguf
       sha256: 64d5be3f16fb91cfb451155fe4745266e2169ccbe1f29f57bfab27fb7fec389e
       uri: huggingface://unsloth/Qwen3-VL-8B-Thinking-GGUF/mmproj-F16.gguf
+- &ggmlorg-llamacpp
+  url: "github:mudler/LocalAI/gallery/virtual.yaml@master"
+  icon: https://cdn-avatars.huggingface.co/v1/production/uploads/620760a26e3b7210c2ff1943/-s1gyJfvbE1RgO5iBeNOi.png
+  license: apache-2.0
+  name: "qwen3-omni-30b-a3b-instruct"
+  urls:
+    - https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Instruct
+    - https://huggingface.co/ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF
+  tags:
+    - llm
+    - gguf
+    - gpu
+    - image-to-text
+    - audio-to-text
+    - multimodal
+    - cpu
+    - qwen
+    - qwen3
+    - omni
+  description: |
+    Qwen3-Omni is the natively end-to-end multilingual omni-modal foundation model. It processes text, images, audio, and video, and delivers real-time streaming responses in both text and natural speech. This GGUF build runs on llama.cpp with the bundled mmproj for multimodal inputs.
+  overrides:
+    backend: llama-cpp
+    mmproj: mmproj-Qwen3-Omni-30B-A3B-Instruct-Q8_0.gguf
+    parameters:
+      model: Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
+    template:
+      use_tokenizer_template: true
+    options:
+      - use_jinja:true
+  files:
+    - filename: Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
+      sha256: d9e2876556e7873e02c0359f832432ee2d67ab7dd0cee3efe0f77fd7a1f4dd85
+      uri: huggingface://ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF/Qwen3-Omni-30B-A3B-Instruct-Q4_K_M.gguf
+    - filename: mmproj-Qwen3-Omni-30B-A3B-Instruct-Q8_0.gguf
+      sha256: 1104376db833f1e89c84834144ac3863340c2cd1ddaeddb39cb0247fb5c20c8d
+      uri: huggingface://ggml-org/Qwen3-Omni-30B-A3B-Instruct-GGUF/mmproj-Qwen3-Omni-30B-A3B-Instruct-Q8_0.gguf
+- !!merge <<: *ggmlorg-llamacpp
+  name: "qwen3-omni-30b-a3b-thinking"
+  urls:
+    - https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Thinking
+    - https://huggingface.co/ggml-org/Qwen3-Omni-30B-A3B-Thinking-GGUF
+  tags:
+    - llm
+    - gguf
+    - gpu
+    - image-to-text
+    - audio-to-text
+    - multimodal
+    - cpu
+    - qwen
+    - qwen3
+    - omni
+    - thinking
+    - reasoning
+  description: |
+    Qwen3-Omni-30B-A3B-Thinking is the reasoning-enhanced variant of Qwen3-Omni, a natively end-to-end multilingual omni-modal foundation model. It processes text, images, and audio and produces chain-of-thought reasoning before the final answer. This GGUF build runs on llama.cpp with the bundled mmproj.
+  overrides:
+    backend: llama-cpp
+    mmproj: mmproj-Qwen3-Omni-30B-A3B-Thinking-Q8_0.gguf
+    parameters:
+      model: Qwen3-Omni-30B-A3B-Thinking-Q4_K_M.gguf
+    template:
+      use_tokenizer_template: true
+    options:
+      - use_jinja:true
+  files:
+    - filename: Qwen3-Omni-30B-A3B-Thinking-Q4_K_M.gguf
+      sha256: afdaeff6f23c740429aadb3fa180f9d53b78278fe0d331b594b0b71bd9bf4835
+      uri: huggingface://ggml-org/Qwen3-Omni-30B-A3B-Thinking-GGUF/Qwen3-Omni-30B-A3B-Thinking-Q4_K_M.gguf
+    - filename: mmproj-Qwen3-Omni-30B-A3B-Thinking-Q8_0.gguf
+      sha256: 2bd5459571f8230a0c251d3d0dd36267753f0800ed145449a34f220a31f93898
+      uri: huggingface://ggml-org/Qwen3-Omni-30B-A3B-Thinking-GGUF/mmproj-Qwen3-Omni-30B-A3B-Thinking-Q8_0.gguf
+- !!merge <<: *ggmlorg-llamacpp
+  name: "qwen3-asr-0.6b"
+  urls:
+    - https://huggingface.co/Qwen/Qwen3-ASR
+    - https://huggingface.co/ggml-org/Qwen3-ASR-0.6B-GGUF
+  tags:
+    - llm
+    - gguf
+    - gpu
+    - audio-to-text
+    - asr
+    - cpu
+    - qwen
+    - qwen3
+  description: |
+    Qwen3-ASR 0.6B is a compact automatic speech recognition model from the Qwen3 family, distributed as a GGUF for llama.cpp. It accepts audio input through the paired mmproj and transcribes it to text, supporting multilingual speech.
+  overrides:
+    backend: llama-cpp
+    mmproj: mmproj-Qwen3-ASR-0.6B-Q8_0.gguf
+    parameters:
+      model: Qwen3-ASR-0.6B-Q8_0.gguf
+    template:
+      use_tokenizer_template: true
+    options:
+      - use_jinja:true
+  files:
+    - filename: Qwen3-ASR-0.6B-Q8_0.gguf
+      sha256: bca259818b50ca7c4c05e9bdb35a5dc04fa039653a6d6f3f0f331f96f6aa1971
+      uri: huggingface://ggml-org/Qwen3-ASR-0.6B-GGUF/Qwen3-ASR-0.6B-Q8_0.gguf
+    - filename: mmproj-Qwen3-ASR-0.6B-Q8_0.gguf
+      sha256: 41a342b5e4c514e968cb756de6cd1b7be39eff43c44c57a2ef5fc6522e36603d
+      uri: huggingface://ggml-org/Qwen3-ASR-0.6B-GGUF/mmproj-Qwen3-ASR-0.6B-Q8_0.gguf
+- !!merge <<: *ggmlorg-llamacpp
+  name: "qwen3-asr-1.7b"
+  urls:
+    - https://huggingface.co/Qwen/Qwen3-ASR
+    - https://huggingface.co/ggml-org/Qwen3-ASR-1.7B-GGUF
+  tags:
+    - llm
+    - gguf
+    - gpu
+    - audio-to-text
+    - asr
+    - cpu
+    - qwen
+    - qwen3
+  description: |
+    Qwen3-ASR 1.7B is the larger automatic speech recognition model from the Qwen3 family, distributed as a GGUF for llama.cpp. It accepts audio input through the paired mmproj and produces higher-quality multilingual transcriptions than the 0.6B variant.
+  overrides:
+    backend: llama-cpp
+    mmproj: mmproj-Qwen3-ASR-1.7B-Q8_0.gguf
+    parameters:
+      model: Qwen3-ASR-1.7B-Q8_0.gguf
+    template:
+      use_tokenizer_template: true
+    options:
+      - use_jinja:true
+  files:
+    - filename: Qwen3-ASR-1.7B-Q8_0.gguf
+      sha256: 58e22d0532d4eacaf034cfac17a6fed159f37c41390c710186783be439d1fc57
+      uri: huggingface://ggml-org/Qwen3-ASR-1.7B-GGUF/Qwen3-ASR-1.7B-Q8_0.gguf
+    - filename: mmproj-Qwen3-ASR-1.7B-Q8_0.gguf
+      sha256: 46c1d533af3f354ceb37ce855dbceff7da7fa7cf1e6a523df3b13440bd164c0d
+      uri: huggingface://ggml-org/Qwen3-ASR-1.7B-GGUF/mmproj-Qwen3-ASR-1.7B-Q8_0.gguf
+- !!merge <<: *ggmlorg-llamacpp
+  name: "glm-ocr"
+  icon: https://huggingface.co/zai-org.png
+  license: mit
+  urls:
+    - https://huggingface.co/zai-org/GLM-4.1V-9B-Thinking
+    - https://huggingface.co/ggml-org/GLM-OCR-GGUF
+  tags:
+    - llm
+    - gguf
+    - gpu
+    - image-to-text
+    - ocr
+    - multimodal
+    - cpu
+    - glm
+  description: |
+    GLM-OCR is a vision-language model specialized for optical character recognition and document understanding, built on the GLM architecture. This GGUF build runs on llama.cpp with the bundled mmproj.
+  overrides:
+    backend: llama-cpp
+    mmproj: mmproj-GLM-OCR-Q8_0.gguf
+    parameters:
+      model: GLM-OCR-Q8_0.gguf
+    template:
+      use_tokenizer_template: true
+    options:
+      - use_jinja:true
+  files:
+    - filename: GLM-OCR-Q8_0.gguf
+      sha256: 45bc244a6446aff850521dc41f18bc8d7105ad5f0c2c8c28af04e7cc4f4d50b1
+      uri: huggingface://ggml-org/GLM-OCR-GGUF/GLM-OCR-Q8_0.gguf
+    - filename: mmproj-GLM-OCR-Q8_0.gguf
+      sha256: 9c4b58e33e316ed142eb5dcb41abec3844d3e6e5dc361ffb782c3fa9d175141f
+      uri: huggingface://ggml-org/GLM-OCR-GGUF/mmproj-GLM-OCR-Q8_0.gguf
+- !!merge <<: *ggmlorg-llamacpp
+  name: "deepseek-ocr"
+  icon: https://huggingface.co/deepseek-ai.png
+  license: mit
+  urls:
+    - https://huggingface.co/deepseek-ai/DeepSeek-OCR
+    - https://huggingface.co/ggml-org/DeepSeek-OCR-GGUF
+  tags:
+    - llm
+    - gguf
+    - gpu
+    - image-to-text
+    - ocr
+    - multimodal
+    - cpu
+    - deepseek
+  description: |
+    DeepSeek-OCR is a vision-language model from DeepSeek AI specialized for optical character recognition and document understanding. This GGUF build runs on llama.cpp with the bundled mmproj.
+  overrides:
+    backend: llama-cpp
+    mmproj: mmproj-DeepSeek-OCR-Q8_0.gguf
+    parameters:
+      model: DeepSeek-OCR-Q8_0.gguf
+    template:
+      use_tokenizer_template: true
+    options:
+      - use_jinja:true
+  files:
+    - filename: DeepSeek-OCR-Q8_0.gguf
+      sha256: 81ede3e256230707dccf7fa052570c3a939d57db99de655f43cbb1a830d14d92
+      uri: huggingface://ggml-org/DeepSeek-OCR-GGUF/DeepSeek-OCR-Q8_0.gguf
+    - filename: mmproj-DeepSeek-OCR-Q8_0.gguf
+      sha256: 786c9b5159898de3d1d94a102836df559fed0bcf09f41a32f62c3219b0e278e0
+      uri: huggingface://ggml-org/DeepSeek-OCR-GGUF/mmproj-DeepSeek-OCR-Q8_0.gguf
 - &jamba
   icon: https://cdn-avatars.huggingface.co/v1/production/uploads/65e60c0ed5313c06372446ff/QwehUHgP2HtVAMW5MzJ2j.png
   name: "ai21labs_ai21-jamba-reasoning-3b"
@@ -2514,6 +2908,132 @@
       - lang_code:a
     known_usecases:
       - tts
+- name: "kokoros"
+  url: "github:mudler/LocalAI/gallery/kokoros.yaml@master"
+  size: "327MB"
+  urls:
+    - https://github.com/lucasjinreal/Kokoros
+  license: apache-2.0
+  tags:
+    - tts
+    - kokoros
+    - cpu
+    - text-to-speech
+    - rust
+  description: |
+    Kokoros is a pure Rust TTS backend using the Kokoro v1.0 ONNX model (82M parameters).
+    Fast, streaming TTS with high quality. American English with af_heart voice.
+  overrides:
+    backend: "kokoros"
+    name: "kokoros"
+    description: "Kokoros Rust TTS - American English"
+    parameters:
+      model: "kokoro-v1.0.onnx"
+      voice: "af_heart"
+    options:
+      - lang_code:en-us
+    known_usecases:
+      - tts
+  files:
+    - filename: "kokoro-v1.0.onnx"
+      sha256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
+      uri: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx"
+    - filename: "voices-v1.0.bin"
+      sha256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
+      uri: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
+- name: "kokoros-ja"
+  url: "github:mudler/LocalAI/gallery/kokoros.yaml@master"
+  size: "327MB"
+  urls:
+    - https://github.com/lucasjinreal/Kokoros
+  license: apache-2.0
+  tags:
+    - tts
+    - kokoros
+    - japanese
+    - text-to-speech
+  description: |
+    Kokoros Rust TTS - Japanese. Uses the Kokoro v1.0 ONNX model with Japanese phonemization.
+  overrides:
+    backend: "kokoros"
+    name: "kokoros-ja"
+    description: "Kokoros Rust TTS - Japanese"
+    parameters:
+      model: "kokoro-v1.0.onnx"
+      voice: "jf_alpha"
+    options:
+      - lang_code:ja
+    known_usecases:
+      - tts
+  files:
+    - filename: "kokoro-v1.0.onnx"
+      sha256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
+      uri: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx"
+    - filename: "voices-v1.0.bin"
+      sha256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
+      uri: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
+- name: "kokoros-cmn"
+  url: "github:mudler/LocalAI/gallery/kokoros.yaml@master"
+  size: "327MB"
+  urls:
+    - https://github.com/lucasjinreal/Kokoros
+  license: apache-2.0
+  tags:
+    - tts
+    - kokoros
+    - chinese
+    - text-to-speech
+  description: |
+    Kokoros Rust TTS - Mandarin Chinese.
+  overrides:
+    backend: "kokoros"
+    name: "kokoros-cmn"
+    description: "Kokoros Rust TTS - Mandarin Chinese"
+    parameters:
+      model: "kokoro-v1.0.onnx"
+      voice: "zf_xiaobei"
+    options:
+      - lang_code:cmn
+    known_usecases:
+      - tts
+  files:
+    - filename: "kokoro-v1.0.onnx"
+      sha256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
+      uri: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx"
+    - filename: "voices-v1.0.bin"
+      sha256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
+      uri: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
+- name: "kokoros-de"
+  url: "github:mudler/LocalAI/gallery/kokoros.yaml@master"
+  size: "327MB"
+  urls:
+    - https://github.com/lucasjinreal/Kokoros
+  license: apache-2.0
+  tags:
+    - tts
+    - kokoros
+    - german
+    - text-to-speech
+  description: |
+    Kokoros Rust TTS - German.
+  overrides:
+    backend: "kokoros"
+    name: "kokoros-de"
+    description: "Kokoros Rust TTS - German"
+    parameters:
+      model: "kokoro-v1.0.onnx"
+      voice: "df_greta"
+    options:
+      - lang_code:de
+    known_usecases:
+      - tts
+  files:
+    - filename: "kokoro-v1.0.onnx"
+      sha256: 7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5
+      uri: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx"
+    - filename: "voices-v1.0.bin"
+      sha256: bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d
+      uri: "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
 - name: "kitten-tts"
   url: "github:mudler/LocalAI/gallery/virtual.yaml@master"
   urls:
@@ -2880,6 +3400,37 @@
       model: rfdetr-base
     known_usecases:
       - detection
+- &sam3cpp
+  name: "edgetam"
+  url: "github:mudler/LocalAI/gallery/virtual.yaml@master"
+  size: "16MB"
+  license: apache-2.0
+  description: |
+    EdgeTAM is an ultra-efficient variant of the Segment Anything Model (SAM) for image segmentation.
+    It uses a RepViT backbone and is only ~16MB quantized (Q4_0), making it ideal for edge deployment.
+    Supports point-prompted and box-prompted image segmentation via the /v1/detection endpoint.
+    Powered by sam3.cpp (C/C++ with GGML).
+  tags:
+    - image-segmentation
+    - object-detection
+    - sam3
+    - edgetam
+    - cpu
+    - gpu
+  urls:
+    - https://github.com/PABannier/sam3.cpp
+    - https://huggingface.co/PABannier/sam3.cpp
+  overrides:
+    backend: sam3-cpp
+    parameters:
+      model: edgetam_q4_0.ggml
+      threads: 4
+    known_usecases:
+      - detection
+  files:
+    - filename: edgetam_q4_0.ggml
+      sha256: a8a35e35fb9a1b6f099c3f35e3024548b0fc979c2a4184642562804192496e09
+      uri: huggingface://PABannier/sam3.cpp/edgetam_q4_0.ggml
 - name: "dream-org_dream-v0-instruct-7b"
   # chatml
   url: "github:mudler/LocalAI/gallery/chatml.yaml@master"
@@ -7663,6 +8214,24 @@
     - filename: granite-embedding-125m-english-f16.gguf
       uri: huggingface://bartowski/granite-embedding-125m-english-GGUF/granite-embedding-125m-english-f16.gguf
       sha256: e2950cf0228514e0e81c6f0701a62a9e4763990ce660b4a3c0329cd6a4acd4b9
+- name: "embeddinggemma-300m"
+  url: github:mudler/LocalAI/gallery/virtual.yaml@master
+  urls:
+    - https://huggingface.co/google/embeddinggemma-300m
+    - https://huggingface.co/ggml-org/embeddinggemma-300m-qat-q8_0-GGUF
+  description: |
+    EmbeddingGemma 300M is a lightweight, high-quality embedding model from Google, based on the Gemma architecture. It produces 1024-dimensional embeddings optimized for retrieval and semantic similarity tasks. This GGUF version uses QAT (Quantization-Aware Training) Q8_0 quantization for efficient inference.
+  tags:
+    - embeddings
+  overrides:
+    backend: llama-cpp
+    embeddings: true
+    parameters:
+      model: embeddinggemma-300m-qat-Q8_0.gguf
+  files:
+    - filename: embeddinggemma-300m-qat-Q8_0.gguf
+      uri: huggingface://ggml-org/embeddinggemma-300m-qat-q8_0-GGUF/embeddinggemma-300m-qat-Q8_0.gguf
+      sha256: 6fa0c02a9c302be6f977521d399b4de3a46310a4f2621ee0063747881b673f67
 - name: "moe-girl-1ba-7bt-i1"
   icon: https://cdn-uploads.huggingface.co/production/uploads/634262af8d8089ebaefd410e/kTXXSSSqpb21rfyOX7FUa.jpeg
   # chatml
@@ -14671,6 +15240,13 @@
     - gpu
     - cpu
   overrides:
+    options:
+      - diffusion_model
+      - clip_l_path:clip_l.safetensors
+      - t5xxl_path:t5xxl_fp16.safetensors
+      - vae_path:ae.safetensors
+      - sampler:euler
+      - vae_decode_only:false
     parameters:
       model: flux1-kontext-dev-Q8_0.gguf
   files:

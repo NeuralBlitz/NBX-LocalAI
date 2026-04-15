@@ -771,6 +771,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/models/toggle-pinned/{name}/{action}": {
+            "put": {
+                "description": "Pin or unpin a model. Pinned models stay loaded and are excluded from automatic eviction.",
+                "tags": [
+                    "config"
+                ],
+                "summary": "Toggle model pinned status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Model name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Action: 'pin' or 'unpin'",
+                        "name": "action",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/localai.ModelResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/localai.ModelResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/localai.ModelResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/localai.ModelResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/models/vram-estimate": {
             "post": {
                 "description": "Estimates VRAM based on model weight files, context size, and GPU layers",
@@ -800,6 +851,57 @@ const docTemplate = `{
                         "description": "VRAM estimate",
                         "schema": {
                             "$ref": "#/definitions/localai.vramEstimateResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/models/{name}/{action}": {
+            "put": {
+                "description": "Enable or disable a model from being loaded on demand. Disabled models remain installed but cannot be loaded.",
+                "tags": [
+                    "config"
+                ],
+                "summary": "Toggle model enabled/disabled status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Model name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Action: 'enable' or 'disable'",
+                        "name": "action",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/localai.ModelResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/localai.ModelResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/localai.ModelResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/localai.ModelResponse"
                         }
                     }
                 }
@@ -1061,6 +1163,69 @@ const docTemplate = `{
                         "description": "Response",
                         "schema": {
                             "$ref": "#/definitions/galleryop.OpStatus"
+                        }
+                    }
+                }
+            }
+        },
+        "/backends/upgrade/{name}": {
+            "post": {
+                "tags": [
+                    "backends"
+                ],
+                "summary": "Upgrade a backend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Backend name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Response",
+                        "schema": {
+                            "$ref": "#/definitions/schema.BackendResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/backends/upgrades": {
+            "get": {
+                "tags": [
+                    "backends"
+                ],
+                "summary": "Get available backend upgrades",
+                "responses": {
+                    "200": {
+                        "description": "Response",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/gallery.UpgradeInfo"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/backends/upgrades/check": {
+            "post": {
+                "tags": [
+                    "backends"
+                ],
+                "summary": "Force backend upgrade check",
+                "responses": {
+                    "200": {
+                        "description": "Response",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/gallery.UpgradeInfo"
+                            }
                         }
                     }
                 }
@@ -1337,6 +1502,28 @@ const docTemplate = `{
                         "name": "file",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "sampling temperature",
+                        "name": "temperature",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "timestamp granularities (word, segment)",
+                        "name": "timestamp_granularities",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "stream partial results as SSE",
+                        "name": "stream",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -2156,6 +2343,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },
@@ -2215,6 +2405,26 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "gallery.UpgradeInfo": {
+            "type": "object",
+            "properties": {
+                "available_digest": {
+                    "type": "string"
+                },
+                "available_version": {
+                    "type": "string"
+                },
+                "backend_name": {
+                    "type": "string"
+                },
+                "installed_digest": {
+                    "type": "string"
+                },
+                "installed_version": {
+                    "type": "string"
                 }
             }
         },
@@ -2355,6 +2565,30 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "localai.ModelResponse": {
+            "type": "object",
+            "properties": {
+                "config": {},
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "error": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2698,8 +2932,15 @@ const docTemplate = `{
                 "class_name": {
                     "type": "string"
                 },
+                "confidence": {
+                    "type": "number"
+                },
                 "height": {
                     "type": "number"
+                },
+                "mask": {
+                    "description": "base64-encoded PNG segmentation mask",
+                    "type": "string"
                 },
                 "width": {
                     "type": "number"
@@ -2715,12 +2956,34 @@ const docTemplate = `{
         "schema.DetectionRequest": {
             "type": "object",
             "properties": {
+                "boxes": {
+                    "description": "Box coordinates as [x1,y1,x2,y2,...] quads",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
                 "image": {
                     "description": "URL or base64-encoded image to analyze",
                     "type": "string"
                 },
                 "model": {
                     "type": "string"
+                },
+                "points": {
+                    "description": "Point coordinates as [x,y,label,...] triples (label: 1=pos, 0=neg)",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "prompt": {
+                    "description": "Text prompt (for SAM 3 PCS mode)",
+                    "type": "string"
+                },
+                "threshold": {
+                    "description": "Detection confidence threshold",
+                    "type": "number"
                 }
             }
         },

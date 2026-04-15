@@ -23,6 +23,9 @@ export const API_CONFIG = {
     installExternalBackend: '/api/backends/install-external',
     backendJob: (uid) => `/api/backends/job/${uid}`,
     deleteInstalledBackend: (name) => `/api/backends/system/delete/${name}`,
+    backendsUpgrades: '/api/backends/upgrades',
+    backendsUpgradesCheck: '/api/backends/upgrades/check',
+    upgradeBackend: (name) => `/api/backends/upgrade/${name}`,
 
     // Resources
     resources: '/api/resources',
@@ -93,6 +96,8 @@ export const API_CONFIG = {
     modelsJobStatus: (uid) => `/models/jobs/${uid}`,
     modelEditGet: (name) => `/api/models/edit/${name}`,
     modelEdit: (name) => `/models/edit/${name}`,
+    modelToggleState: (name, action) => `/models/toggle-state/${name}/${action}`,
+    modelTogglePinned: (name, action) => `/models/toggle-pinned/${name}/${action}`,
     backendsAvailable: '/backends/available',
     backendsInstalled: '/backends',
     version: '/version',

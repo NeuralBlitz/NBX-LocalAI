@@ -28,7 +28,7 @@ Add build matrix entries for each platform/GPU type you want to support. Look at
 - CUDA 13 builds: Add after other CUDA 13 builds (e.g., after `gpu-nvidia-cuda-13-chatterbox`)
 
 **Additional build types you may need:**
-- ROCm/HIP: Use `build-type: 'hipblas'` with `base-image: "rocm/dev-ubuntu-24.04:6.4.4"`
+- ROCm/HIP: Use `build-type: 'hipblas'` with `base-image: "rocm/dev-ubuntu-24.04:7.2.1"`
 - Intel/SYCL: Use `build-type: 'intel'` or `build-type: 'sycl_f16'`/`sycl_f32` with `base-image: "intel/oneapi-basekit:2025.3.0-0-devel-ubuntu24.04"`
 - L4T (ARM): Use `build-type: 'l4t'` with `platforms: 'linux/arm64'` and `runs-on: 'ubuntu-24.04-arm'`
 
@@ -128,6 +128,30 @@ After adding a new backend, verify:
 - [ ] No YAML syntax errors (check with linter)
 - [ ] No Makefile syntax errors (check with linter)
 - [ ] Follows the same pattern as similar backends (e.g., if it's a transcription backend, follow `faster-whisper` pattern)
+
+## Bundling runtime shared libraries (`package.sh`)
+
+The final `Dockerfile.python` stage is `FROM scratch` — there is no system `libc`, no `apt`, no fallback library path. Only files explicitly copied from the builder stage end up in the backend image. That means any runtime `dlopen` your backend (or its Python deps) needs **must** be packaged into `${BACKEND}/lib/`.
+
+Pattern:
+
+1. Make sure the library is installed in the builder stage of `backend/Dockerfile.python` (add it to the top-level `apt-get install`).
+2. Drop a `package.sh` in your backend directory that copies the library — and its soname symlinks — into `$(dirname $0)/lib`. See `backend/python/vllm/package.sh` for a reference implementation that walks `/usr/lib/x86_64-linux-gnu`, `/usr/lib/aarch64-linux-gnu`, etc.
+3. `Dockerfile.python` already runs `package.sh` automatically if it exists, after `package-gpu-libs.sh`.
+4. `libbackend.sh` automatically prepends `${EDIR}/lib` to `LD_LIBRARY_PATH` at run time, so anything packaged this way is found by `dlopen`.
+
+How to find missing libs: when a Python module silently fails to register torch ops or you see `AttributeError: '_OpNamespace' '...' object has no attribute '...'`, run the backend image's Python with `LD_DEBUG=libs` to see which `dlopen` failed. The filename in the error message (e.g. `libnuma.so.1`) is what you need to package.
+
+To verify packaging works without trusting the host:
+
+```bash
+make docker-build-<backend>
+CID=$(docker create --entrypoint=/run.sh local-ai-backend:<backend>)
+docker cp $CID:/lib /tmp/check && docker rm $CID
+ls /tmp/check    # expect the bundled .so files + symlinks
+```
+
+Then boot it inside a fresh `ubuntu:24.04` (which intentionally does *not* have the lib installed) to confirm it actually loads from the backend dir.
 
 ## 6. Example: Adding a Python Backend
 

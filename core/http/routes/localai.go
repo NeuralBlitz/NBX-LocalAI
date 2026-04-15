@@ -59,13 +59,17 @@ func RegisterLocalAIRoutes(router *echo.Echo,
 		backendGalleryEndpointService := localai.CreateBackendEndpointService(
 			appConfig.BackendGalleries,
 			appConfig.SystemState,
-			galleryService)
+			galleryService,
+			app.UpgradeChecker())
 		router.POST("/backends/apply", backendGalleryEndpointService.ApplyBackendEndpoint(), adminMiddleware)
 		router.POST("/backends/delete/:name", backendGalleryEndpointService.DeleteBackendEndpoint(), adminMiddleware)
 		router.GET("/backends", backendGalleryEndpointService.ListBackendsEndpoint(), adminMiddleware)
 		router.GET("/backends/available", backendGalleryEndpointService.ListAvailableBackendsEndpoint(appConfig.SystemState), adminMiddleware)
 		router.GET("/backends/galleries", backendGalleryEndpointService.ListBackendGalleriesEndpoint(), adminMiddleware)
 		router.GET("/backends/jobs/:uuid", backendGalleryEndpointService.GetOpStatusEndpoint(), adminMiddleware)
+		router.GET("/backends/upgrades", backendGalleryEndpointService.GetUpgradesEndpoint(), adminMiddleware)
+		router.POST("/backends/upgrades/check", backendGalleryEndpointService.CheckUpgradesEndpoint(), adminMiddleware)
+		router.POST("/backends/upgrade/:name", backendGalleryEndpointService.UpgradeBackendEndpoint(), adminMiddleware)
 		// Custom model import endpoint
 		router.POST("/models/import", localai.ImportModelEndpoint(cl, appConfig), adminMiddleware)
 
@@ -74,6 +78,14 @@ func RegisterLocalAIRoutes(router *echo.Echo,
 
 		// Custom model edit endpoint
 		router.POST("/models/edit/:name", localai.EditModelEndpoint(cl, ml, appConfig), adminMiddleware)
+
+		// Toggle model enable/disable endpoint
+		router.PUT("/models/toggle-state/:name/:action", localai.ToggleStateModelEndpoint(cl, ml, appConfig), adminMiddleware)
+
+		// Toggle model pinned status endpoint
+		router.PUT("/models/toggle-pinned/:name/:action", localai.TogglePinnedModelEndpoint(cl, appConfig, func() {
+			app.SyncPinnedModelsToWatchdog()
+		}), adminMiddleware)
 
 		// Reload models endpoint
 		router.POST("/models/reload", localai.ReloadModelsEndpoint(cl, appConfig), adminMiddleware)

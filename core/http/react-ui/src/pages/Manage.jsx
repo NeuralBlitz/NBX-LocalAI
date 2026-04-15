@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import ResourceMonitor from '../components/ResourceMonitor'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Toggle from '../components/Toggle'
 import { useModels } from '../hooks/useModels'
 import { backendControlApi, modelsApi, backendsApi, systemApi, nodesApi } from '../utils/api'
 
@@ -22,8 +23,11 @@ export default function Manage() {
   const [backendsLoading, setBackendsLoading] = useState(true)
   const [reloading, setReloading] = useState(false)
   const [reinstallingBackends, setReinstallingBackends] = useState(new Set())
+  const [upgrades, setUpgrades] = useState({})
   const [confirmDialog, setConfirmDialog] = useState(null)
   const [distributedMode, setDistributedMode] = useState(false)
+  const [togglingModels, setTogglingModels] = useState(new Set())
+  const [pinningModels, setPinningModels] = useState(new Set())
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
@@ -59,6 +63,15 @@ export default function Manage() {
     // Detect distributed mode (nodes API returns 503 when not enabled)
     nodesApi.list().then(() => setDistributedMode(true)).catch(() => {})
   }, [fetchLoadedModels, fetchBackends])
+
+  // Fetch available backend upgrades
+  useEffect(() => {
+    if (activeTab === 'backends') {
+      backendsApi.checkUpgrades()
+        .then(data => setUpgrades(data || {}))
+        .catch(() => {})
+    }
+  }, [activeTab])
 
   const handleStopModel = (modelName) => {
     setConfirmDialog({
@@ -99,6 +112,46 @@ export default function Manage() {
     })
   }
 
+  const handleToggleModel = async (modelId, currentlyDisabled) => {
+    const action = currentlyDisabled ? 'enable' : 'disable'
+    setTogglingModels(prev => new Set(prev).add(modelId))
+    try {
+      await modelsApi.toggleState(modelId, action)
+      addToast(`Model ${modelId} ${action}d`, 'success')
+      refetchModels()
+      if (!currentlyDisabled) {
+        // Model was just disabled, refresh loaded models since it may have been shut down
+        setTimeout(fetchLoadedModels, 500)
+      }
+    } catch (err) {
+      addToast(`Failed to ${action} model: ${err.message}`, 'error')
+    } finally {
+      setTogglingModels(prev => {
+        const next = new Set(prev)
+        next.delete(modelId)
+        return next
+      })
+    }
+  }
+
+  const handleTogglePinned = async (modelId, currentlyPinned) => {
+    const action = currentlyPinned ? 'unpin' : 'pin'
+    setPinningModels(prev => new Set(prev).add(modelId))
+    try {
+      await modelsApi.togglePinned(modelId, action)
+      addToast(`Model ${modelId} ${action}ned`, 'success')
+      refetchModels()
+    } catch (err) {
+      addToast(`Failed to ${action} model: ${err.message}`, 'error')
+    } finally {
+      setPinningModels(prev => {
+        const next = new Set(prev)
+        next.delete(modelId)
+        return next
+      })
+    }
+  }
+
   const handleReload = async () => {
     setReloading(true)
     try {
@@ -118,6 +171,22 @@ export default function Manage() {
       addToast(`Reinstalling ${name}...`, 'info')
     } catch (err) {
       addToast(`Failed to reinstall: ${err.message}`, 'error')
+    } finally {
+      setReinstallingBackends(prev => {
+        const next = new Set(prev)
+        next.delete(name)
+        return next
+      })
+    }
+  }
+
+  const handleUpgradeBackend = async (name) => {
+    try {
+      setReinstallingBackends(prev => new Set(prev).add(name))
+      await backendsApi.upgrade(name)
+      addToast(`Upgrading ${name}...`, 'info')
+    } catch (err) {
+      addToast(`Failed to upgrade: ${err.message}`, 'error')
     } finally {
       setReinstallingBackends(prev => {
         const next = new Set(prev)
@@ -210,6 +279,7 @@ export default function Manage() {
             <table className="table">
               <thead>
                 <tr>
+                  <th style={{ width: 36 }}>Enabled</th>
                   <th>Name</th>
                   <th>Status</th>
                   <th>Backend</th>
@@ -219,34 +289,53 @@ export default function Manage() {
               </thead>
               <tbody>
                 {models.map(model => (
-                  <tr key={model.id}>
+                  <tr key={model.id} style={{ opacity: model.disabled ? 0.55 : 1, transition: 'opacity 0.2s' }}>
+                    {/* Enable/Disable toggle */}
+                    <td>
+                      <Toggle
+                        checked={!model.disabled}
+                        onChange={() => handleToggleModel(model.id, model.disabled)}
+                        disabled={togglingModels.has(model.id)}
+                      />
+                    </td>
+                    {/* Name */}
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                        <i className="fas fa-brain" style={{ color: 'var(--color-accent)' }} />
-                        <span className="badge badge-success" style={{ width: 6, height: 6, padding: 0, borderRadius: '50%', minWidth: 'auto' }} />
                         <span style={{ fontWeight: 500 }}>{model.id}</span>
-                        <a
-                          href="#"
-                          onClick={(e) => { e.preventDefault(); navigate(`/app/model-editor/${encodeURIComponent(model.id)}`) }}
-                          style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}
-                          title="Edit config"
-                        >
-                          <i className="fas fa-pen-to-square" />
-                        </a>
-                        {!distributedMode && (
+                        {model.pinned && (
+                          <i className="fas fa-thumbtack" style={{ fontSize: '0.625rem', color: 'var(--color-warning)' }} title="Pinned — won't be idle-unloaded" />
+                        )}
+                        <div style={{ display: 'flex', gap: '2px', marginLeft: 'auto' }}>
                           <a
                             href="#"
-                            onClick={(e) => { e.preventDefault(); navigate(`/app/backend-logs/${encodeURIComponent(model.id)}`) }}
-                            style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}
-                            title="Backend logs"
+                            onClick={(e) => { e.preventDefault(); navigate(`/app/model-editor/${encodeURIComponent(model.id)}`) }}
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '2px 5px', fontSize: '0.625rem' }}
+                            title="Edit config"
                           >
-                            <i className="fas fa-terminal" />
+                            <i className="fas fa-pen-to-square" />
                           </a>
-                        )}
+                          {!distributedMode && (
+                            <a
+                              href="#"
+                              onClick={(e) => { e.preventDefault(); navigate(`/app/backend-logs/${encodeURIComponent(model.id)}`) }}
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '2px 5px', fontSize: '0.625rem' }}
+                              title="Backend logs"
+                            >
+                              <i className="fas fa-terminal" />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </td>
+                    {/* Status */}
                     <td>
-                      {loadedModelIds.has(model.id) ? (
+                      {model.disabled ? (
+                        <span className="badge" style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>
+                          <i className="fas fa-ban" style={{ fontSize: '6px' }} /> Disabled
+                        </span>
+                      ) : loadedModelIds.has(model.id) ? (
                         <span className="badge badge-success">
                           <i className="fas fa-circle" style={{ fontSize: '6px' }} /> Running
                         </span>
@@ -256,16 +345,19 @@ export default function Manage() {
                         </span>
                       )}
                     </td>
+                    {/* Backend */}
                     <td>
                       <span className="badge badge-info">{model.backend || 'Auto'}</span>
                     </td>
+                    {/* Use Cases */}
                     <td>
                       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                         <a href="#" onClick={(e) => { e.preventDefault(); navigate(`/app/chat/${encodeURIComponent(model.id)}`) }} className="badge badge-info" style={{ textDecoration: 'none', cursor: 'pointer' }}>Chat</a>
                       </div>
                     </td>
+                    {/* Actions */}
                     <td>
-                      <div style={{ display: 'flex', gap: 'var(--spacing-xs)', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: 'var(--spacing-xs)', justifyContent: 'flex-end', alignItems: 'center' }}>
                         {loadedModelIds.has(model.id) && (
                           <button
                             className="btn btn-secondary btn-sm"
@@ -275,6 +367,17 @@ export default function Manage() {
                             <i className="fas fa-stop" />
                           </button>
                         )}
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleTogglePinned(model.id, model.pinned)}
+                          disabled={pinningModels.has(model.id) || model.disabled}
+                          title={model.pinned ? 'Unpin model (allow idle unloading)' : 'Pin model (prevent idle unloading)'}
+                          style={{
+                            color: model.pinned ? 'var(--color-warning)' : undefined,
+                          }}
+                        >
+                          <i className={`fas fa-thumbtack${pinningModels.has(model.id) ? ' fa-spin' : ''}`} />
+                        </button>
                         <button
                           className="btn btn-danger btn-sm"
                           onClick={() => handleDeleteModel(model.id)}
@@ -368,6 +471,17 @@ export default function Manage() {
                             For: <span style={{ color: 'var(--color-accent)' }}>{backend.Metadata.meta_backend_for}</span>
                           </span>
                         )}
+                        {backend.Metadata?.version && (
+                          <span>
+                            <i className="fas fa-code-branch" style={{ fontSize: '0.5rem', marginRight: 4 }} />
+                            Version: <span style={{ color: 'var(--color-text-primary)' }}>v{backend.Metadata.version}</span>
+                            {upgrades[backend.Name] && (
+                              <span style={{ color: '#856404', marginLeft: 4 }}>
+                                → v{upgrades[backend.Name].available_version}
+                              </span>
+                            )}
+                          </span>
+                        )}
                         {backend.Metadata?.installed_at && (
                           <span>
                             <i className="fas fa-calendar" style={{ fontSize: '0.5rem', marginRight: 4 }} />
@@ -382,12 +496,12 @@ export default function Manage() {
                         {!backend.IsSystem ? (
                           <>
                             <button
-                              className="btn btn-secondary btn-sm"
-                              onClick={() => handleReinstallBackend(backend.Name)}
+                              className={`btn ${upgrades[backend.Name] ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+                              onClick={() => upgrades[backend.Name] ? handleUpgradeBackend(backend.Name) : handleReinstallBackend(backend.Name)}
                               disabled={reinstallingBackends.has(backend.Name)}
-                              title="Reinstall"
+                              title={upgrades[backend.Name] ? `Upgrade to v${upgrades[backend.Name]?.available_version || 'latest'}` : 'Reinstall'}
                             >
-                              <i className={`fas ${reinstallingBackends.has(backend.Name) ? 'fa-spinner fa-spin' : 'fa-rotate'}`} />
+                              <i className={`fas ${reinstallingBackends.has(backend.Name) ? 'fa-spinner fa-spin' : upgrades[backend.Name] ? 'fa-arrow-up' : 'fa-rotate'}`} />
                             </button>
                             <button
                               className="btn btn-danger btn-sm"

@@ -95,6 +95,35 @@ func (m *MockBackend) Predict(ctx context.Context, in *pb.PredictOptions) (*pb.R
 		}, nil
 	}
 
+	// Simulate Gemma 4 / thinking model with C++ autoparser:
+	// - Message contains the clean content (autoparser extracts it from OAI choices[0].message.content)
+	// - ChatDeltas contain both reasoning and content separately
+	// This reproduces the bug where Go-side PrependThinkingTokenIfNeeded
+	// incorrectly prepends a thinking start token to the clean content,
+	// causing the entire response to be classified as unclosed reasoning.
+	if strings.Contains(in.Prompt, "AUTOPARSER_THINKING_CONTENT") {
+		return &pb.Reply{
+			Message:      []byte("I am a helpful AI assistant designed to assist you with a wide range of tasks."),
+			Tokens:       20,
+			PromptTokens: 50,
+			ChatDeltas: []*pb.ChatDelta{
+				{
+					ReasoningContent: "The user is asking a simple introductory question. I should respond directly.",
+					Content:          "I am a helpful AI assistant designed to assist you with a wide range of tasks.",
+				},
+			},
+		}, nil
+	}
+
+	// Simulate multiple tool calls in a single response (Go-side JSON parser path).
+	if strings.Contains(in.Prompt, "MULTI_TOOL_CALL") {
+		return &pb.Reply{
+			Message:      []byte(`{"name": "get_weather", "arguments": {"location": "Rome"}}
+{"name": "get_weather", "arguments": {"location": "Paris"}}`),
+			Tokens:       30,
+			PromptTokens: 10,
+		}, nil
+	}
 	var response string
 	toolName := mockToolNameFromRequest(in)
 	if toolName != "" && !promptHasToolResults(in.Prompt) {
@@ -195,6 +224,38 @@ func (m *MockBackend) PredictStream(in *pb.PredictOptions, stream pb.Backend_Pre
 			}); err != nil {
 				return err
 			}
+		}
+		return nil
+	}
+
+	// Simulate tool calls streamed as whole JSON objects (Go-side parser path).
+	// Each object is sent as a complete chunk so the incremental parser can
+	// detect tool calls mid-stream (unlike char-by-char which only parses after
+	// streaming completes).
+	if strings.Contains(in.Prompt, "MULTI_TOOL_CALL") {
+		chunks := []string{
+			`{"name": "get_weather", "arguments": {"location": "Rome"}}`,
+			"\n",
+			`{"name": "get_weather", "arguments": {"location": "Paris"}}`,
+		}
+		for i, chunk := range chunks {
+			if err := stream.Send(&pb.Reply{
+				Message: []byte(chunk),
+				Tokens:  int32(i + 1),
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// Simulate single tool call streamed as whole JSON (Go-side parser path).
+	if strings.Contains(in.Prompt, "SINGLE_TOOL_CALL") {
+		if err := stream.Send(&pb.Reply{
+			Message: []byte(`{"name": "get_weather", "arguments": {"location": "San Francisco"}}`),
+			Tokens:  1,
+		}); err != nil {
+			return err
 		}
 		return nil
 	}

@@ -97,6 +97,8 @@ export const modelsApi = {
   getJobStatus: (uid) => fetchJSON(API_CONFIG.endpoints.modelsJobStatus(uid)),
   getEditConfig: (name) => fetchJSON(API_CONFIG.endpoints.modelEditGet(name)),
   editConfig: (name, body) => postJSON(API_CONFIG.endpoints.modelEdit(name), body),
+  toggleState: (name, action) => fetchJSON(API_CONFIG.endpoints.modelToggleState(name, action), { method: 'PUT' }),
+  togglePinned: (name, action) => fetchJSON(API_CONFIG.endpoints.modelTogglePinned(name, action), { method: 'PUT' }),
   getConfigMetadata: (section) => fetchJSON(
     section ? `${API_CONFIG.endpoints.configMetadata}?section=${section}`
             : API_CONFIG.endpoints.configMetadata
@@ -118,6 +120,9 @@ export const backendsApi = {
   installExternal: (body) => postJSON(API_CONFIG.endpoints.installExternalBackend, body),
   getJob: (uid) => fetchJSON(API_CONFIG.endpoints.backendJob(uid)),
   deleteInstalled: (name) => postJSON(API_CONFIG.endpoints.deleteInstalledBackend(name), {}),
+  checkUpgrades: () => fetchJSON(API_CONFIG.endpoints.backendsUpgrades),
+  forceCheckUpgrades: () => postJSON(API_CONFIG.endpoints.backendsUpgradesCheck, {}),
+  upgrade: (name) => postJSON(API_CONFIG.endpoints.upgradeBackend(name), {}),
 }
 
 // Chat API (non-streaming)
